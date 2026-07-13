@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "local-llm-delegate"
+version = "1.11.3"
+description = "Two-tier LLM delegation for Claude Code — free local LM Studio + strong cloud (Opencode Zen) behind a privacy guard"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "David Munoz" }]
+keywords = ["claude", "llm", "delegation", "privacy", "lm-studio"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+]

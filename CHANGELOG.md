@@ -4,6 +4,16 @@ Versions track the exportable engine (`llm_local.py` + `llm_strong.py`) and skil
 Project-specific collectors/orchestrators (e.g. trading data collectors) live outside the
 plugin and are not versioned here.
 
+## 1.12.0
+- **Security hardening.** Extended privacy redaction (Google API keys, GitHub PATs,
+  Basic auth, SSH keys, hex strings). Added symlink denial to file deny-list. Extended
+  deploy guard patterns (`getattr`, `__import__`, `exec`, `eval`, `os.system`, `os.popen`).
+  Added `<tool_output>` markers to defend against prompt injection via tool output. Added
+  `--no-privacy` warning on stderr. Added `--dry-run` to `llm_strong.py`. Redact
+  `consult_local` question before sending to local model. Runbook loading now warns when
+  loaded from `$LLM_RUNBOOK_DIR`. Added `--version` flag. Fixed documentation mismatches
+  (default endpoint, concurrency, base URL).
+
 ## 1.11.3
 - **Route strong delegate defaults to DeepSeek V4 Flash Free.** `llm_strong.py`
   now defaults to the Zen endpoint (`https://opencode.ai/zen/v1`) and model id
@@ -15,7 +25,7 @@ plugin and are not versioned here.
   without auto-escalating to a paid model.
 
 ## 1.11.2
-- **Environment model override for local LLM.** Added `LOCAL_LLM_MODEL` environment variable support to `llm_local.py` to allow override of default local models when executing local actions or sub-commands like `graphify_ask.py`.
+- **Environment model override for local LLM.** Added `LOCAL_LLM_MODEL` environment variable support to `llm_local.py` to allow override of default local models when executing local actions or sub-commands.
 
 ## 1.11.1
 - **Switch Strong paid model to GLM-5.2.** Updated strong model defaults and documentation to target `glm-5.2` on Opencode Zen for enhanced reasoning and paid-tier delegations.

@@ -23,7 +23,7 @@ Usage:
     # plan only (no agents spawned, no cost) — see the partition + routing
     python fleet_review.py --scope "src/**" --dry-run
     # real run over a module, free + paid workers + audit
-    python fleet_review.py --scope "src/scalping_bot/runtime/**" \
+    python fleet_review.py --scope "src/**" \
         --confidential-glob "config/**" --max-words 350
     # whole tracked codebase
     python fleet_review.py
@@ -59,7 +59,7 @@ SOURCE_EXTS = {
 }
 SKIP_PARTS = {
     ".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build",
-    ".worktrees", "graphify-out", ".qoder", "vendor", "site-packages",
+    ".worktrees", "generated", ".qoder", "vendor", "site-packages",
 }
 SKIP_NAME_RE = re.compile(r"(\.min\.|\.lock$|package-lock\.json$|\.map$|\.pyc$)")
 DEFAULT_KB_PER_WORKER = 110          # under the 240KB inline cap, leaves prompt room
@@ -157,6 +157,10 @@ def sum_tokens(stderr: str) -> tuple[int, int]:
 def run_worker(root: Path, files: list[str], paid: bool, max_words: int,
                timeout: int, worker_runbook: str = "review") -> dict:
     """One strong-agent review over a slice of files. Returns its findings."""
+    KNOWN_RUNBOOKS = {"review", "improve", "triage", "summarize", "count",
+                      "commit", "supervise", "watch", "fleet"}
+    if worker_runbook not in KNOWN_RUNBOOKS and not worker_runbook.endswith(".md"):
+        raise ValueError(f"unknown runbook: {worker_runbook}")
     cmd = [sys.executable, str(LLM_STRONG), "--runbook", worker_runbook,
            "--caveman", "--max-words", str(max_words), "--timeout", str(timeout)]
     if not paid:

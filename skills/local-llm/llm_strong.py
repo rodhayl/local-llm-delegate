@@ -1,13 +1,13 @@
 """CLI wrapper for a strong secondary cloud LLM (Opencode Zen, OpenAI-compatible).
 
-Same interface as tools/llm_local.py (it reuses its engine), but targets a
+Same interface as llm_local.py (it reuses its engine), but targets a
 Sonnet-level cloud model for tasks the local model can't be trusted with:
 second-opinion verification, nuanced review drafts, cross-file synthesis.
 
 --consult-local gives the strong model a consult_local tool: it can ask the free
 local LM Studio model for brainstorming, drafts, or second opinions mid-reasoning.
-Safe even in privacy mode: the question originates from the cloud model (it can
-only contain what it already saw) and the local answer is redacted before upload.
+Safe even in privacy mode: the question is redacted before upload (in privacy mode)
+and the local answer is also redacted before upload.
 
 PRIVACY MODE IS ON BY DEFAULT (this sends data to a cloud service):
   - refuses to inline sensitive files (.env*, *secret*, *token*, keys/certs, .ssh, ...);
@@ -36,9 +36,9 @@ Configuration (env vars; set once in ~/.claude/settings.json "env" block):
   OPENCODE_BASE_URL   optional, default https://opencode.ai/zen/v1
 
 Usage:
-    python tools/llm_strong.py --check
-    python tools/llm_strong.py "review this design" -f notes.md --caveman --max-words 120
-    git diff | python tools/llm_strong.py "spot logic bugs" --stdin
+    python llm_strong.py --check
+    python llm_strong.py "review this design" -f notes.md --caveman --max-words 120
+    git diff | python llm_strong.py "spot logic bugs" --stdin
 """
 
 from __future__ import annotations
@@ -96,10 +96,14 @@ def _count(kind: str) -> None:
 
 def _long_string_sub(m: re.Match) -> str:
     s = m.group(0)
-    # Only redact high-entropy-looking strings (mixed case + digit); leaves git SHAs alone.
+    # Redact high-entropy-looking strings (mixed case + digit) or pure hex (40+ chars).
+    # Leaves git SHAs (40 hex, lowercase only) and base64 config values alone.
     if any(c.islower() for c in s) and any(c.isupper() for c in s) and any(c.isdigit() for c in s):
         _count("long-string")
         return "[REDACTED:long-string]"
+    if len(s) >= 40 and all(c in "0123456789abcdefABCDEF" for c in s):
+        _count("hex-string")
+        return "[REDACTED:hex-string]"
     return s
 
 
@@ -115,6 +119,10 @@ REDACT_RULES = [
     # AWS access-key IDs concatenate directly after the prefix (no separator), 20 chars
     # total — too short for the long-string rule, so they need their own pattern.
     ("aws-key", re.compile(r"\b(?:AKIA|ASIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ABIA|ACCA)[0-9A-Z]{16}\b"), "[REDACTED:aws-key]"),
+    ("google-api", re.compile(r"\bAIza[A-Za-z0-9_\-]{35}\b"), "[REDACTED:google-api]"),
+    ("github-pat", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{50,}\b"), "[REDACTED:github-pat]"),
+    ("basic-auth", re.compile(r"(?i)\bbasic\s+[A-Za-z0-9+/=]{20,}"), "[REDACTED:basic-auth]"),
+    ("ssh-key", re.compile(r"-----BEGIN[A-Z ]+PRIVATE KEY-----[\s\S]*?-----END[A-Z ]+PRIVATE KEY-----"), "[REDACTED:ssh-key]"),
     ("email", re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b"), "[REDACTED:email]"),
     ("ipv4", re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b"), "[REDACTED:ipv4]"),
     ("account", re.compile(r"(?i)\b(login|account)(\s*[:=]\s*)(\d{5,})"), r"\1\2[REDACTED:account]"),
@@ -140,6 +148,12 @@ def redact(text: str) -> str:
 
 def denied_pattern(path: str) -> str | None:
     globs = _deny_globs()
+    # Refuse symlinks — their target may be a sensitive file with a non-sensitive name
+    try:
+        if Path(path).is_symlink():
+            return "symlink"
+    except OSError:
+        return "symlink-error"
     for seg in Path(path).resolve().parts:
         s = seg.lower()
         for g in globs:
@@ -197,7 +211,8 @@ def _consult_local(arguments: dict, tag: str) -> str:
         show_reasoning=False, no_retry=False,
     )
     try:
-        answer = llm_local.call_llm(sub, question + "\nAnswer in <= 200 words.",
+        send_question = redact(question) if _privacy_on else question
+        answer = llm_local.call_llm(sub, send_question + "\nAnswer in <= 200 words.",
                                     llm_local.local_backend(), tag=f"{tag}consult ")
     except SystemExit as exc:
         return f"consult_local unavailable: {exc}"
@@ -218,6 +233,8 @@ DEPLOY_DENY_PATTERNS = [
     r"\bcurl\b", r"\bwget\b", r"requests\.", r"urllib\.request", r"\bsocket\b", r"ftplib",
     r"/etc/", r"id_ed25519", r"id_rsa", r"\.ssh\b", r"\.env\b",
     r"secret", r"password", r"private[_-]?key", r"base64\.b64decode",
+    r"getattr\s*\(", r"__import__\s*\(", r"\bexec\s*\(", r"\beval\s*\(",
+    r"\bos\.system\b", r"\bos\.popen\b",
 ]
 
 
@@ -231,7 +248,8 @@ def allowed_scripts_from(args) -> list[str]:
 
 def deploy_guard(code: str, allowed_scripts: list[str]) -> str | None:
     """Return a refusal reason if `code` is outside the guard, else None.
-    `allowed_scripts` is caller-supplied (no project names hardcoded here)."""
+    `allowed_scripts` is caller-supplied (no project names hardcoded here).
+    Defense-in-depth, not a sandbox — determined code can bypass regex patterns."""
     for pat in DEPLOY_DENY_PATTERNS:
         if re.search(pat, code, re.IGNORECASE):
             return (f"REFUSED by guard: code matches denied pattern /{pat}/. "
@@ -319,7 +337,8 @@ def main() -> int:
     ap.add_argument("--no-privacy", action="store_true",
                     help="disable privacy protections (file deny-list, redaction, tools/image block)")
     ap.add_argument("--confidential-tools", action="store_true",
-                    help="run tools under privacy mode with ALL tool output redacted (for delegated deploys)")
+                    help="run tools under privacy mode with ALL tool output redacted (for delegated deploys; "
+                         "covers common secret formats; use only with trusted runbooks)")
     ap.add_argument("--allow-script", action="append", default=[],
                     help="confidential-tools: allow run_python subprocesses that invoke this script "
                          "name (repeatable; also reads LLM_CONFIDENTIAL_ALLOWED_SCRIPTS=a,b)")
@@ -328,6 +347,8 @@ def main() -> int:
     ap.add_argument("--no-escalate", action="store_true",
                     help="disable auto-escalation from the open/free model to the paid model on "
                          "reasoning-truncation or invalid JSON (escalation is ON by default for --no-privacy)")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="print model routing decision and exit (no API call)")
     args = ap.parse_args()
 
     if args.confidential_tools and args.no_privacy:
@@ -388,6 +409,10 @@ def main() -> int:
         esc = f" (escalates to: {args.escalate_model})" if args.escalate_model else ""
         print(f"[model] {args.model} — {tier}{suffix}{esc}", file=sys.stderr)
 
+    if args.dry_run:
+        print(f"[dry-run] model={args.model} tier={tier} escalate={args.escalate_model}")
+        return 0
+
     base_url = os.environ.get("OPENCODE_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
     if args.model == DEFAULT_STRONG_MODEL and base_url == "https://opencode.ai/zen/go/v1":
         if not args.check:
@@ -405,6 +430,9 @@ def main() -> int:
     global _privacy_on
     _privacy_on = privacy
     print(f"[privacy] {'ON' if privacy else 'OFF (--no-privacy)'}", file=sys.stderr)
+    if not privacy and not args.check:
+        print("[privacy] WARNING: file deny-list, redaction, tool/image blocks are DISABLED. "
+              "Sensitive data may be sent to the cloud.", file=sys.stderr)
     # Enable tools + raise limits BEFORE the consult block so the tools system
     # prompt is selected; enforce_privacy then permits tools for this mode.
     if args.confidential_tools:

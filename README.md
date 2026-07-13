@@ -10,18 +10,19 @@ conclusions → the calling agent oversees both and decides.
 **Confidentiality invariant:** raw confidential data goes to the local tier only; only a distilled conclusion is ever passed to the cloud tier.
 
 ## Confidentiality & safety
-- **Privacy guard** (strong tier, ON by default): refuses to inline sensitive files (`.env*`, `*secret*`, keys/certs, `.ssh`, ...) — extend with `LLM_EXTRA_DENY_GLOBS=glob1,glob2`; redacts outbound text (secrets, bearer/JWT, API-key shapes, AWS access-key IDs, IPv4, emails, login/account numbers). `--no-privacy` disables it (non-sensitive data only).
+- **Privacy guard** (strong tier, ON by default): refuses to inline sensitive files (`.env*`, `*secret*`, keys/certs, `.ssh`, ...) — extend with `LLM_EXTRA_DENY_GLOBS=glob1,glob2`; redacts outbound text (secrets, bearer/JWT, API-key shapes, AWS access-key IDs, Google API keys, GitHub PATs, SSH keys, IPv4, emails, login/account numbers). `--no-privacy` disables it (non-sensitive data only).
 - **`--confidential-tools`**: runs `run_python` under the privacy guard with EVERY tool output redacted before upload, plus a containment guard — subprocesses may only launch caller-allowlisted scripts (`--allow-script NAME`, repeatable; or `LLM_CONFIDENTIAL_ALLOWED_SCRIPTS=a,b`), and destructive/exfiltrating code is refused. Lets you delegate long agentic jobs (deploys) confidentially.
 - **Capability guard** (local tier): `--require-model NAME` exits non-zero unless that model is loaded; `--check` warns if the expected model is missing — prevents silent quality degradation from a swapped/smaller model.
 - **Telemetry** (optional): set `LLM_DELEGATE_LOG=path.jsonl` to record one usage line per call (tier/model/tokens/seconds) to quantify savings.
+- **Security note**: `--tools` enables `run_python`, which executes arbitrary Python code on the host with full filesystem/network/OS access. Only use with trusted prompts and models. Never use with untrusted input that could contain prompt injection.
 
 ## Requirements
-- Local tier: LM Studio serving an OpenAI-compatible API with a model supporting function calling (`--tools`) and vision (`-i`). Default endpoint `http://169.254.83.107:1234` (override `LOCAL_LLM_URL`).
+- Local tier: LM Studio serving an OpenAI-compatible API with a model supporting function calling (`--tools`) and vision (`-i`). Default endpoint `http://127.0.0.1:1234` (override `LOCAL_LLM_URL`).
 - Strong tier: an Opencode Zen subscription. Configure once in `~/.claude/settings.json`:
   ```json
   { "env": { "OPENCODE_API_KEY": "<key>", "OPENCODE_MODEL": "<zen model id>", "OPENCODE_MODEL_OPEN": "<cheaper model id>" } }
   ```
-  `OPENCODE_BASE_URL` optional (default `https://opencode.ai/zen/go/v1`). Never commit the key.
+  `OPENCODE_BASE_URL` optional (default `https://opencode.ai/zen/v1`). Never commit the key.
   `OPENCODE_MODEL_OPEN` is optional: when set, `--no-privacy` calls (fully non-confidential content)
   route to this cheaper/free model, while privacy-guarded calls keep using `OPENCODE_MODEL`.
   Explicit `--model` overrides the routing; the chosen model is announced on stderr.
@@ -41,14 +42,16 @@ conclusions → the calling agent oversees both and decides.
 
 ## Cross-tier consultation
 `llm_strong.py --consult-local` gives the strong model a `consult_local` tool to query the free local
-LLM mid-reasoning (brainstorms, drafts, second opinions). Privacy-safe: the question can only contain
-what the cloud model already saw, and the local answer is redacted before upload.
+LLM mid-reasoning (brainstorms, drafts, second opinions). Privacy-safe: both the question and the local answer are redacted before upload.
 
 ## Install
+### Via Claude Code plugin marketplace (when available)
 ```bash
 claude plugin marketplace add <path-to-claude-plugins-folder>
 claude plugin install local-llm-delegate@rulfe-tools
 ```
+### Manual install
+Copy the `skills/local-llm/` directory into your Claude skills directory.
 
 ## Quick test
 ```bash

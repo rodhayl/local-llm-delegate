@@ -28,7 +28,7 @@ it will launch.
 
 1. **Commander** (`fleet_review.py`, local): enumerates `git ls-files`, keeps only
    reviewable source, classifies each file, partitions into byte-budgeted slices, and
-   dispatches workers in parallel (`--concurrency`, default 4 — 429-friendly).
+   dispatches workers in parallel (`--concurrency`, default 2 — 429-friendly).
 2. **Worker agents** (`llm_strong.py --runbook review`, parallel): each reviews one
    slice with the false-positive-resistant `review` runbook (confidence-tagged).
 3. **Auditor agent** (one `llm_strong.py`, PAID privacy-ON): receives ALL merged
@@ -49,7 +49,7 @@ The auditor always runs PAID privacy-ON (it sees findings that may quote confide
 code). Pass `--audit-no-privacy` only when the whole scope is known non-secret.
 
 Set this project's confidential globs once (so a bare run routes correctly):
-`LLM_FLEET_CONFIDENTIAL_GLOBS=config/**,src/scalping_bot/runtime/**` (env), or pass
+`LLM_FLEET_CONFIDENTIAL_GLOBS=config/**,src/confidential/**` (env), or pass
 `--confidential-glob` per run.
 
 ## Efficiency knobs (keep the report — and the bill — tight)

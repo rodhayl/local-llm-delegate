@@ -9,7 +9,7 @@ Two wrappers (stdlib-only), same CLI:
 
 | Tier | Script | Backend | Cost | Use for |
 |------|--------|---------|------|---------|
-| **local** (default) | `python "${CLAUDE_PLUGIN_ROOT}/skills/local-llm/llm_local.py"` | LM Studio, `LOCAL_LLM_URL` env (default `http://169.254.83.107:1234`) | free | bulk volume: logs, big files, counting, vision, diffs |
+| **local** (default) | `python "${CLAUDE_PLUGIN_ROOT}/skills/local-llm/llm_local.py"` | LM Studio, `LOCAL_LLM_URL` env (default `http://127.0.0.1:1234`) | free | bulk volume: logs, big files, counting, vision, diffs |
 | **strong** | `python "${CLAUDE_PLUGIN_ROOT}/skills/local-llm/llm_strong.py"` | Opencode Zen (cloud), env-configured | subscription | quality: hard reasoning the local model can't be trusted with |
 
 Answer → stdout. Token usage + timing → stderr. Exit 1 = endpoint down / request failed / privacy refusal.
@@ -31,7 +31,7 @@ Set once in `~/.claude/settings.json` `"env"` block (applies to every project) o
 { "env": { "OPENCODE_API_KEY": "<key>", "OPENCODE_MODEL": "<zen model id>" } }
 ```
 
-`OPENCODE_BASE_URL` optional (default `https://opencode.ai/zen/go/v1`). Missing key/model → clear error, exit 1.
+`OPENCODE_BASE_URL` optional (default `https://opencode.ai/zen/v1`). Missing key/model → clear error, exit 1.
 Model switching: `--check` lists every model ID the subscription offers; switch via `OPENCODE_MODEL` (permanent) or `--model <id>` (per call).
 Two-model confidentiality routing: privacy-guarded calls use `OPENCODE_MODEL` (strong **paid** model); `--no-privacy` calls prefer `OPENCODE_MODEL_OPEN` (the **free**/cheaper model for fully non-confidential content; falls back to `OPENCODE_MODEL` if unset). Explicit `--model` overrides both. The chosen model + tier is announced on stderr (`[model] ...`). **COST DEFAULT: for non-confidential strong work (code review of non-secret source, diffs, public docs, cross-file synthesis) pass `--no-privacy` so it uses the FREE tier — reserve the paid privacy model for genuinely confidential data. Privacy-ON (paid) on plain source review is wasted spend; verify with the telemetry reader below.**
 Both model vars accept a comma-separated fallback chain (e.g. `deepseek-v4-flash-free,deepseek-v4-flash`): on HTTP 429 (rate limit) or an unsupported/unknown model id, the call automatically retries on the next model in the chain (`[fallback] ...` on stderr).
@@ -39,14 +39,14 @@ Both model vars accept a comma-separated fallback chain (e.g. `deepseek-v4-flash
 ## Strong tier privacy guard — ON by default (cloud upload!)
 
 - Refuses sensitive files (`.env*`, `*secret*`, `*token*`, `*credential*`, key/cert files, `.ssh`, ...) — hard error naming the file. Projects add their own sensitive globs via `LLM_EXTRA_DENY_GLOBS=glob1,glob2`.
-- Blocks `--tools` (local execution output can't be audited before upload) and `-i` images (pixels can't be redacted) — **unless** `--confidential-tools`, which runs `run_python` with every tool output redacted AND a guard: subprocesses may only launch caller-allowlisted scripts (`--allow-script NAME` / `LLM_CONFIDENTIAL_ALLOWED_SCRIPTS=a,b`), and destructive/exfiltrating code is refused.
+- Blocks `--tools` (local execution output can't be audited before upload) and `-i` images (pixels can't be redacted) — **unless** `--confidential-tools`, which runs `run_python` with every tool output redacted AND a guard: subprocesses may only launch caller-allowlisted scripts (`--allow-script NAME` / `LLM_CONFIDENTIAL_ALLOWED_SCRIPTS=a,b`), and destructive/exfiltrating code is refused. Redaction covers common secret formats but cannot guarantee catching every possible format — only use with trusted runbooks.
 - Redacts outbound text: key/token/password assignments, bearer/JWT, API-key-shaped strings, IPv4, emails, `login=`/`account` numbers → `[REDACTED:<type>]`, per-type counts on stderr. Git SHAs and config values survive.
 - `--no-privacy` disables all of it — only for data already known non-sensitive.
 
 ## Token-savings telemetry (automatic)
 
 Every call (local and strong) appends one usage record (tier, model, tokens, seconds) to `./.llm_delegate/usage.jsonl` — no opt-in. Override the file with `LLM_DELEGATE_LOG`, the dir with `LLM_DELEGATE_LOG_DIR`, or disable with `LLM_DELEGATE_LOG=NUL`.
-Report savings: `python "D:/GitHub/scalping-bot-trader-mt5-priv/claude-plugins/local-llm-delegate/skills/local-llm/delegation_savings.py" [--session | --since ISO] [--json]`. It prints tokens **offloaded** (`prompt+completion` per call = input you didn't read into the main model's context + analysis it didn't generate ≈ main-context tokens saved), split by tier and by **free vs paid** cost class. Use it to confirm non-confidential work is hitting the free tier.
+Report savings: `python delegation_savings.py [--session | --since ISO] [--json]`. It prints tokens **offloaded** (`prompt+completion` per call = input you didn't read into the main model's context + analysis it didn't generate ≈ main-context tokens saved), split by tier and by **free vs paid** cost class. Use it to confirm non-confidential work is hitting the free tier.
 
 ## Why this saves tokens
 
@@ -69,9 +69,10 @@ Verified: 100k-token logs triaged into 3 bullets; 10MB JSON explored via tools w
 | `--caveman` | telegraphic minimal-token output |
 | `--max-words N` | word budget (obeyed reliably; auto-compress fallback) |
 | `--out FILE` | long answer to disk, 15-line preview to stdout |
-| `--timeout S` | default 300; keep ≥300 for >50KB inputs on the local tier |
+| `--timeout S` | adaptive: 900s floor + ~12s/KB of inlined input, capped at 3600s |
+| `--version` | print version and exit |
 | `--no-privacy` | strong tier only: disable deny-list/redaction/blocks |
-| `--consult-local` | strong tier only: strong model may query the free local LLM mid-reasoning (privacy-safe; local answer redacted before upload) |
+| `--consult-local` | strong tier only: strong model may query the free local LLM mid-reasoning (privacy-safe; both question and local answer redacted before upload) |
 
 ## Runbook templates — fill a blank, don't hand-author
 
@@ -131,7 +132,8 @@ acting; pass the relevant domain caveats up front to cut the noise.
    it pattern-matches config key names (may report a similar key, not the operative one),
    and it quotes documents accurately but can miss that a passage was superseded later in the file.
 4. Keep for yourself: code edits, decisions, deploys, git, anything irreversible.
-5. For vision metric questions, ask for tail metrics (max, % above threshold) explicitly —
+5. `--tools` executes arbitrary Python on the host — never use with untrusted prompts or models.
+6. For vision metric questions, ask for tail metrics (max, % above threshold) explicitly —
    "volatility" defaults to means and may hide bursts.
 
 ## Tier routing — local first, strong for judgment, yourself for actions
