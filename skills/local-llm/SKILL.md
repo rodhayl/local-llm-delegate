@@ -1,6 +1,6 @@
 ---
 name: local-llm
-description: Delegate analysis to cheaper LLMs to save API tokens. Two tiers — (1) free local LM Studio LLM for bulk work — log/test-output triage, summarizing or extracting from large files, exact counting/aggregation over data files (CSV/JSON/SQLite), screenshot/chart reading, drafting from diffs; (2) strong cloud model (Opencode Zen) behind a privacy guard for Sonnet-level judgment — second-opinion verification, nuanced review drafts, cross-file synthesis. Delegation is the DEFAULT, not an option: before every read that returns content you'd only skim, ask "conclusion or content?" — conclusion → delegate (don't read it into context). Triggers: any log/test/diff output regardless of size, any count/aggregation, any doc or file of ~100+ lines you would only skim. Read content yourself only when you will edit it, quote it verbatim, decide on it, or act on it. Anti-pattern: reading a long doc or inline-scripting a count yourself instead of delegating. Probe availability first and fall back to doing the work yourself if an endpoint is down.
+description: Delegate analysis to cheaper LLMs to save API tokens. Two tiers — free local LM Studio for bulk work (logs, counting, vision, diffs) and strong cloud model (Opencode Zen) behind a privacy guard for judgment calls (review, synthesis, second opinions). Delegation is the DEFAULT: before every read that returns content you'd only skim, ask "conclusion or content?" — conclusion → delegate.
 ---
 
 # LLM Delegates
@@ -13,6 +13,11 @@ Two wrappers (stdlib-only), same CLI:
 | **strong** | `python "${CLAUDE_PLUGIN_ROOT}/skills/local-llm/llm_strong.py"` | Opencode Zen (cloud), env-configured | subscription | quality: hard reasoning the local model can't be trusted with |
 
 Answer → stdout. Token usage + timing → stderr. Exit 1 = endpoint down / request failed / privacy refusal.
+
+## Prerequisites
+
+- **Local tier**: [LM Studio](https://lmstudio.ai/) running with a model that supports function calling
+- **Strong tier**: An [Opencode Zen](https://opencode.ai/zen) subscription + `OPENCODE_API_KEY`
 
 ## Availability
 
@@ -168,3 +173,31 @@ Keep strong-tier volume low: quality, not bulk (it costs subscription usage; loc
 Paste `${CLAUDE_PLUGIN_ROOT}/AGENTS_SNIPPET.md` into the project's AGENTS.md / CLAUDE.md and
 replace the placeholder rows with that project's concrete artifacts (log paths, result DBs,
 report files) so agents know the project-specific delegation targets.
+
+## Copy-paste examples
+
+```bash
+# Triage a log file
+tail -100 app.log | python llm_local.py --runbook triage --stdin --caveman
+
+# Count rows in a CSV
+python llm_local.py --runbook count "rows by status in data.csv"
+
+# Summarize a long document
+python llm_local.py --runbook summarize -f docs/design.md --caveman --max-words 50
+
+# Review a git diff (free tier)
+git diff | python llm_strong.py --runbook review --stdin --no-privacy --caveman --max-words 400
+
+# Draft a commit message
+git diff --cached | python llm_local.py --runbook commit --stdin
+
+# Second opinion on a claim
+echo "CLAIM: the cache TTL is 300s" | python llm_strong.py --runbook supervise --stdin --no-privacy --caveman
+
+# Fleet review of a module (dry-run first)
+python fleet_review.py --scope "src/myapp/**" --dry-run
+
+# Check token savings
+python delegation_savings.py --session
+```

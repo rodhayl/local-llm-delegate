@@ -1,23 +1,67 @@
-## LLM Delegates (token saver) — two-tier split
-The `local-llm-delegate` plugin provides a split: **LOCAL does the confidential/bulk work → STRONG supervises load-bearing LOCAL conclusions → you (the agent) oversee both and decide.** Delegation is the DEFAULT, not an option. **Self-check BEFORE every Read/Grep/file-dump that returns content you'd only skim: "do I need the CONCLUSION or the content?" — conclusion → DELEGATE (don't read it into context).** Triggers (delegate, never hand-read): any log/test/diff output, any size; any count/aggregation (`local --tools` + file PATH); any doc/file ≳100 lines (`local -f FILE --caveman`); code/architecture "what/where/how" questions (a code-index/graph query first, if the project has one). Read content yourself ONLY when you will edit it, quote it verbatim, decide on it, or act on it (commits, git, small outputs). ANTI-PATTERN: reading a long doc yourself or inline-scripting a count instead of delegating — building the delegates ≠ using them. Probe `--check` first; answer → stdout, usage/timing → stderr.
-- **local** (`llm_local.py`, free LM Studio, DEFAULT sink, **private — nothing leaves the machine → zero confidentiality limits**): bulk analysis, data aggregation, log triage, vision (`-i` — local tier ONLY), first-pass drafts. Slower on huge inputs; occasionally misreads domain context. `--tools` for exact counting (raise `--run-python-timeout N` for big jobs). `--require-model NAME` preflights that the expected model is loaded (`--check` warns if it isn't) so a swapped/smaller model can't silently degrade quality.
-- **strong** (`llm_strong.py`, Opencode Zen cloud, env: `OPENCODE_API_KEY`/`OPENCODE_MODEL`): smarter/faster judgment — **supervises** load-bearing local conclusions (sees only the distilled, redacted result — never raw data), plus non-confidential nuanced synthesis. Privacy guard ON by default (sensitive-file deny-list + secret/IP/email/AWS-key redaction; blocks `--tools`/`-i`); extend the deny-list with `LLM_EXTRA_DENY_GLOBS=glob1,glob2`. Model routing & **COST**: privacy-ON → `OPENCODE_MODEL` (typically a PAID model); `--no-privacy` → `OPENCODE_MODEL_OPEN` (the FREE/cheaper tier) if set; both accept comma-separated 429-fallback chains; `--model` overrides. **Default to `--no-privacy` (free tier) for ANY non-confidential strong work — code review of non-secret source, diffs, public docs, cross-file synthesis. Reserve the paid privacy tier for genuinely confidential data.** Running privacy-ON (paid) on plain source review is pure waste. **Auto-escalation (v1.8.0):** the free tier self-upgrades to the paid `OPENCODE_MODEL` automatically (once) if it truncates on reasoning or returns invalid `--json` — so default to `--no-privacy` even for big/hard non-confidential jobs without fear of a weak free model failing silently; it spends paid tokens only when genuinely stuck (`--no-escalate` opts out). `--consult-local` lets it query the local model mid-reasoning. `--confidential-tools` runs `run_python` under privacy with EVERY tool output redacted AND a guard (subprocesses may only launch `--allow-script NAME` / `LLM_CONFIDENTIAL_ALLOWED_SCRIPTS` allowlisted scripts; destructive/exfiltrating code refused) — for delegating long agentic jobs (e.g. a deploy runbook) without leaking.
+## LLM Delegates — two-tier split
 
-**Confidentiality invariant:** raw confidential data (full logs/configs/snapshots) → LOCAL only; only a distilled conclusion ever goes to STRONG.
-**Supervise a load-bearing local conclusion:** `LOCAL_OUT=$(… | llm_local "analyze" --stdin --caveman); echo "$LOCAL_OUT" | llm_strong "Supervise: agree or correct, flag errors" --stdin --caveman`.
-**Telemetry (automatic, zero opt-in):** every call is logged to `./.llm_delegate/usage.jsonl` (override `LLM_DELEGATE_LOG`/`LLM_DELEGATE_LOG_DIR`; disable with `LLM_DELEGATE_LOG=NUL`). Report savings with `python delegation_savings.py --session` — tokens offloaded (≈ main-model context saved) split by tier and by **free vs paid** cost class; `--json` to export. Check it to confirm non-confidential work is going to the FREE tier.
-**Code review = delegate it (free tier):** `git diff -- files | python llm_strong.py "review for correctness/safety bugs; SEVERITY|where|issue|fix" --no-privacy --stdin --caveman --max-words 400`. Split inputs >240KB with `--head-kb/--tail-kb`. ALWAYS verify load-bearing findings against the code yourself — strong over-flags already-guarded code.
-**Keep the delegate production-ready & improve it as you go:** when friction appears (too slow, wrong/paid tier, missing flag, wasted tokens), upgrade the engine in the same pass, bump the plugin version + CHANGELOG, and review the change with strong (`--no-privacy`) + local before moving on. Local reasoning models are slow on big inputs — route large code-review/bug-hunts to STRONG (free tier), keep LOCAL for confidential bulk, counting (`--tools`), and vision.
+**Delegation is the DEFAULT, not an option.** Before every Read/Grep/file-dump that returns content you'd only skim, ask: "do I need the CONCLUSION or the content?" — conclusion → DELEGATE.
 
-**Runbook templates (fill a blank, don't hand-author):** `--runbook NAME` prepends a bundled template as the prompt preamble — `triage` (top finding in output), `summarize` (long doc), `count` (exact aggregation), `review` (code/diff bugs), `commit` (commit message from diff), `supervise` (AGREE/DISAGREE on a claim), `watch` (poll a status cmd, early-stop). Makes the positional prompt optional (pipe data via `--stdin`/`-f`) and auto-sets `--caveman`/`--tools` per template. Reach for it before writing a bespoke prompt; `$LLM_RUNBOOK_DIR` adds project-specific ones. **Safety-collision:** if a delegated call is blocked/sandboxed/times-out, fall back to doing it in-context — never bypass the classifier.
-Counting/aggregation requires local `--tools` + file path in prompt; never inline via `-f`. Same for LOG TRIAGE of files >80KB. Inline timeouts are adaptive when `--timeout` is omitted. Append `--caveman --max-words N` unless exact quotes or `--json` are required.
-Verify critical claims locally (or escalate to strong); delegate only analysis, never code edits or irreversible actions. Document-final answers are not deploy truth — cross-check git/config/live state.
+### When to delegate
 
-| Project delegation targets | Delegate command pattern |
-|---------------------------|--------------------------|
-| `<main log path>`         | local: >80KB → `--tools` + path ("count error patterns via python, then summarize"); small → `-f LOG --tail-kb 80 --caveman` |
-| `<results DB/JSON>`       | local: `--tools` + path in prompt for exact counts/group-bys |
-| `<big report docs>`       | local: `--caveman --max-words 50` pre-read to flag sections |
-| `<screenshots/dashboards>` | local: `-i IMG` (strong tier has no vision) |
-| `<decision-critical analyses>` | strong: second-opinion verification (`--caveman --max-words 80`) before acting |
-| `<design/brainstorm tasks>` | strong + `--consult-local` (free local brainstorming inside the strong call) |
+- Any log/test/diff output, any size
+- Any count/aggregation (`local --tools` + file PATH)
+- Any doc/file ≳100 lines (`local -f FILE --caveman`)
+- Code/architecture "what/where/how" questions
+
+**Read content yourself ONLY** when you will edit it, quote it verbatim, decide on it, or act on it (commits, git, small outputs). Probe `--check` first; answer → stdout, usage/timing → stderr.
+
+### Local tier (free, private)
+
+`llm_local.py` — free LM Studio, **nothing leaves the machine**. Use for: bulk analysis, data aggregation, log triage, vision (`-i`), first-pass drafts. `--tools` for exact counting (raise `--run-python-timeout N` for big jobs). `--require-model NAME` preflights that the expected model is loaded.
+
+### Strong tier (cloud, privacy guard)
+
+`llm_strong.py` — Opencode Zen cloud. **Supervises** load-bearing local conclusions (sees only the distilled, redacted result). Privacy guard ON by default (sensitive-file deny-list + redaction; blocks `--tools`/`-i`).
+
+**Cost routing:** privacy-ON → `OPENCODE_MODEL` (PAID); `--no-privacy` → `OPENCODE_MODEL_OPEN` (FREE). **Default to `--no-privacy` for non-confidential work.** Auto-escalation: free tier self-upgrades to paid once if it truncates or returns invalid JSON (`--no-escalate` opts out).
+
+`--confidential-tools` runs `run_python` under privacy with EVERY tool output redacted AND a guard (subprocesses restricted to allowlisted scripts; destructive code refused).
+
+### Confidentiality invariant
+
+Raw confidential data (full logs/configs/snapshots) → LOCAL only; only a distilled conclusion ever goes to STRONG.
+
+### Supervise a load-bearing local conclusion
+
+```
+LOCAL_OUT=$(… | llm_local "analyze" --stdin --caveman); echo "$LOCAL_OUT" | llm_strong "Supervise: agree or correct, flag errors" --stdin --caveman
+```
+
+### Code review (free tier)
+
+```
+git diff -- files | python llm_strong.py "review for correctness/safety bugs; SEVERITY|where|issue|fix" --no-privacy --stdin --caveman --max-words 400
+```
+
+Split inputs >240KB with `--head-kb/--tail-kb`. ALWAYS verify load-bearing findings against the code yourself.
+
+### Telemetry (automatic)
+
+Every call logged to `./.llm_delegate/usage.jsonl`. Report: `python delegation_savings.py --session`.
+
+### Runbook templates
+
+`--runbook NAME` prepends a bundled template as the prompt preamble. Makes the positional prompt optional (pipe data via `--stdin`/`-f`). Bundled: `triage`, `summarize`, `count`, `review`, `commit`, `supervise`, `watch`. **Safety-collision:** if a delegated call is blocked/times-out, fall back to doing it in-context.
+
+### Rules
+
+1. Counting/aggregation → `--tools` + file PATH in prompt (never inline via `-f`)
+2. Append `--caveman --max-words N` unless exact quotes or `--json` required
+3. Verify critical claims locally; delegate only analysis, never code edits or irreversible actions
+
+### Project delegation targets
+
+| Target | Command |
+|--------|---------|
+| `<main log path>` | local: `--tools` + path (large) or `-f LOG --tail-kb 80 --caveman` (small) |
+| `<results DB/JSON>` | local: `--tools` + path in prompt |
+| `<big report docs>` | local: `--caveman --max-words 50` pre-read |
+| `<screenshots>` | local: `-i IMG` |
+| `<decision-critical>` | strong: second-opinion (`--caveman --max-words 80`) |
+| `<brainstorm>` | strong + `--consult-local` |

@@ -4,6 +4,14 @@ Versions track the exportable engine (`llm_local.py` + `llm_strong.py`) and skil
 Project-specific collectors/orchestrators (e.g. trading data collectors) live outside the
 plugin and are not versioned here.
 
+## Recent highlights (v1.12.0)
+
+- Extended privacy redaction (Google API keys, GitHub PATs, SSH keys, hex strings)
+- Symlink denial in file deny-list
+- `<tool_output>` markers for prompt injection defense
+- `--dry-run` for cost preview, `--version` flag
+- `--no-privacy` warning on stderr
+
 ## 1.12.0
 - **Security hardening.** Extended privacy redaction (Google API keys, GitHub PATs,
   Basic auth, SSH keys, hex strings). Added symlink denial to file deny-list. Extended

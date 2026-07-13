@@ -1,50 +1,59 @@
 # local-llm-delegate
 
+![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
+![Claude Plugin](https://img.shields.io/badge/Claude-Plugin-green.svg)
+
+## Quick start
+
+1. **Install LM Studio** and load a model with function-calling support (e.g. `qwen3.6-35b-a3b-mtp`)
+2. **Verify local tier**: `python skills/local-llm/llm_local.py --check`
+3. **Try it**: `echo "hello world" | python skills/local-llm/llm_local.py "count words" --stdin --caveman`
+
+For the strong (cloud) tier, set `OPENCODE_API_KEY` in `~/.claude/settings.json` (see [Requirements](#requirements)).
+
 ## What it does
-Two-tier LLM delegation to keep large inputs out of the Claude context window, as a
-**split**: LOCAL does the confidential/bulk work → STRONG supervises load-bearing LOCAL
-conclusions → the calling agent oversees both and decides.
-- **Local tier** (`llm_local.py`): bulk text analysis, log triage, data aggregation (`--tools`), and vision (`-i`) on a free local LM Studio instance. Private — nothing leaves the machine, so it has zero confidentiality limits and is the default sink for sensitive data.
+
+Two-tier LLM delegation to keep large inputs out of the Claude context window:
+- **Local tier** (`llm_local.py`): bulk text analysis, log triage, data aggregation (`--tools`), and vision (`-i`) on a free local LM Studio instance. Private — nothing leaves the machine.
 - **Strong tier** (`llm_strong.py`): smarter/faster cloud reasoning via Opencode Zen — supervises load-bearing local conclusions (sees only the distilled, redacted result) and handles non-confidential nuanced synthesis, behind a privacy guard (ON by default; `--no-privacy` to disable).
 
 **Confidentiality invariant:** raw confidential data goes to the local tier only; only a distilled conclusion is ever passed to the cloud tier.
 
 ## Confidentiality & safety
+
 - **Privacy guard** (strong tier, ON by default): refuses to inline sensitive files (`.env*`, `*secret*`, keys/certs, `.ssh`, ...) — extend with `LLM_EXTRA_DENY_GLOBS=glob1,glob2`; redacts outbound text (secrets, bearer/JWT, API-key shapes, AWS access-key IDs, Google API keys, GitHub PATs, SSH keys, IPv4, emails, login/account numbers). `--no-privacy` disables it (non-sensitive data only).
 - **`--confidential-tools`**: runs `run_python` under the privacy guard with EVERY tool output redacted before upload, plus a containment guard — subprocesses may only launch caller-allowlisted scripts (`--allow-script NAME`, repeatable; or `LLM_CONFIDENTIAL_ALLOWED_SCRIPTS=a,b`), and destructive/exfiltrating code is refused. Lets you delegate long agentic jobs (deploys) confidentially.
 - **Capability guard** (local tier): `--require-model NAME` exits non-zero unless that model is loaded; `--check` warns if the expected model is missing — prevents silent quality degradation from a swapped/smaller model.
 - **Telemetry** (optional): set `LLM_DELEGATE_LOG=path.jsonl` to record one usage line per call (tier/model/tokens/seconds) to quantify savings.
-- **Security note**: `--tools` enables `run_python`, which executes arbitrary Python code on the host with full filesystem/network/OS access. Only use with trusted prompts and models. Never use with untrusted input that could contain prompt injection.
+- **Security note**: `--tools` enables `run_python`, which executes arbitrary Python code on the host with full filesystem/network/OS access. Only use with trusted prompts and models.
 
 ## Requirements
-- Local tier: LM Studio serving an OpenAI-compatible API with a model supporting function calling (`--tools`) and vision (`-i`). Default endpoint `http://127.0.0.1:1234` (override `LOCAL_LLM_URL`).
-- Strong tier: an Opencode Zen subscription. Configure once in `~/.claude/settings.json`:
+
+- **Local tier**: [LM Studio](https://lmstudio.ai/) serving an OpenAI-compatible API with a model supporting function calling (`--tools`) and vision (`-i`). Default endpoint `http://127.0.0.1:1234` (override `LOCAL_LLM_URL`).
+- **Strong tier**: an [Opencode Zen](https://opencode.ai/zen) subscription. Configure once in `~/.claude/settings.json`:
   ```json
   { "env": { "OPENCODE_API_KEY": "<key>", "OPENCODE_MODEL": "<zen model id>", "OPENCODE_MODEL_OPEN": "<cheaper model id>" } }
   ```
   `OPENCODE_BASE_URL` optional (default `https://opencode.ai/zen/v1`). Never commit the key.
-  `OPENCODE_MODEL_OPEN` is optional: when set, `--no-privacy` calls (fully non-confidential content)
-  route to this cheaper/free model, while privacy-guarded calls keep using `OPENCODE_MODEL`.
-  Explicit `--model` overrides the routing; the chosen model is announced on stderr.
-  Both model vars accept a comma-separated fallback chain (e.g.
-  `"deepseek-v4-flash-free,deepseek-v4-flash"`): on rate limit (429) or an unsupported model id,
-  the call retries automatically on the next model in the chain.
+  `OPENCODE_MODEL_OPEN` is optional: when set, `--no-privacy` calls (fully non-confidential content) route to this cheaper/free model, while privacy-guarded calls keep using `OPENCODE_MODEL`. Both model vars accept a comma-separated fallback chain for automatic retry on rate limits.
 
-## Switching the strong-tier model (Opencode Zen)
-1. **List the model IDs available to your subscription** — run the probe; it prints every ID:
-   ```bash
-   python "${CLAUDE_PLUGIN_ROOT}/skills/local-llm/llm_strong.py" --check
-    # available: minimax-m3, kimi-k2.6, glm-5.2, deepseek-v4-pro, qwen3.7-max, ...
-   ```
-   (Equivalently: `GET https://opencode.ai/zen/go/v1/models` with `Authorization: Bearer <key>`, or see the model catalog in the Opencode dashboard at https://opencode.ai/zen.)
-2. **Switch permanently**: edit `OPENCODE_MODEL` in `~/.claude/settings.json` (new Claude Code sessions pick it up).
-3. **Switch for one call**: pass `--model <id>` on the command line.
+## Fleet review (whole-codebase swarm)
+
+`fleet_review.py` fans out parallel review agents across an entire codebase, then audits the merged findings into a single ranked table. Always run `--dry-run` first to preview cost (PAID vs FREE workers).
+
+```bash
+python skills/local-llm/fleet_review.py --scope "src/**" --confidential-glob "config/**" --dry-run
+```
+
+See `skills/local-llm/runbooks/fleet.md` for details.
 
 ## Cross-tier consultation
-`llm_strong.py --consult-local` gives the strong model a `consult_local` tool to query the free local
-LLM mid-reasoning (brainstorms, drafts, second opinions). Privacy-safe: both the question and the local answer are redacted before upload.
+
+`llm_strong.py --consult-local` gives the strong model a `consult_local` tool to query the free local LLM mid-reasoning (brainstorms, drafts, second opinions). Privacy-safe: both the question and the local answer are redacted before upload.
 
 ## Install
+
 ### Via Claude Code plugin marketplace (when available)
 ```bash
 claude plugin marketplace add <path-to-claude-plugins-folder>
@@ -54,22 +63,55 @@ claude plugin install local-llm-delegate@rulfe-tools
 Copy the `skills/local-llm/` directory into your Claude skills directory.
 
 ## Quick test
+
 ```bash
-python "${CLAUDE_PLUGIN_ROOT}/skills/local-llm/llm_local.py" --check    # local: ~3s, lists models
-python "${CLAUDE_PLUGIN_ROOT}/skills/local-llm/llm_strong.py" --check   # strong: needs OPENCODE_API_KEY
+python skills/local-llm/llm_local.py --check    # local: ~3s, lists models
+python skills/local-llm/llm_strong.py --check   # strong: needs OPENCODE_API_KEY
 ```
 Exit code 1 indicates endpoint failure, missing config, or a privacy refusal.
 
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| `unavailable: endpoint up but no models loaded` | Load a model in LM Studio |
+| `OPENCODE_API_KEY is not set` | Set it in `~/.claude/settings.json` or as env var |
+| `error: privacy mode refuses file ...` | Use `--no-privacy` if data is non-sensitive, or `--confidential-tools` |
+| Slow responses | Local reasoning models are slow; use `--caveman --max-words N` to reduce output |
+| `error: no files match ...` | Check your glob pattern; use `ls` to verify the path exists |
+| `warning: output truncated at max_tokens` | Increase `--max-tokens` or use `--chunk` for large inputs |
+
+## Known limitations
+
+- Local tier is slow on large inputs (reasoning model burns tokens "thinking" before answering)
+- Privacy redaction covers common formats but can't catch every possible secret
+- `run_python` executes arbitrary code — no sandbox, no container, no seccomp
+- Fleet review concurrency hard-capped at 2 (backend rate limits)
+
 ## Contents
-- `.claude-plugin/plugin.json` — Plugin manifest & metadata
-- `skills/local-llm/SKILL.md` — Delegation rules, tier routing, CLI flags, playbook
-- `skills/local-llm/llm_local.py` — Stdlib-only CLI wrapper (local tier; also the shared engine)
-- `skills/local-llm/runbooks/` — Bundled `--runbook NAME` prompt templates (`triage`, `summarize`, `count`, `review`, `commit`, `supervise`, `watch`); load one as the instruction preamble instead of hand-authoring. A runbook makes the positional prompt optional and auto-sets `--caveman`/`--tools` per template. Add project-specific runbooks via `$LLM_RUNBOOK_DIR`.
-- `skills/local-llm/llm_strong.py` — Strong cloud tier with privacy guard (imports the engine)
-- `AGENTS_SNIPPET.md` — Generic delegation snippet to paste into a project's AGENTS.md (fill the artifact-mapping table)
-- `CHANGELOG.md` — Version history of the exportable engine
+
+### Core
+- `skills/local-llm/llm_local.py` — Local tier engine (stdlib-only, also shared by strong tier)
+- `skills/local-llm/llm_strong.py` — Strong tier with privacy guard
+- `skills/local-llm/fleet_review.py` — Whole-codebase review orchestrator
+- `skills/local-llm/delegation_savings.py` — Token-savings report
+
+### Configuration
+- `.claude-plugin/plugin.json` — Plugin manifest
+- `skills/local-llm/SKILL.md` — Agent-facing rules, flags, and playbook
+- `skills/local-llm/runbooks/` — Prompt templates (`triage`, `summarize`, `count`, `review`, `commit`, `supervise`, `watch`, `fleet`)
+
+### Project integration
+- `AGENTS_SNIPPET.md` — Paste into your project's AGENTS.md
+- `CHANGELOG.md` — Version history
+- `LICENSE` — MIT license
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.
 
 ## Uninstall
+
 ```bash
 claude plugin uninstall local-llm-delegate@rulfe-tools
 ```
