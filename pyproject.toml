@@ -8,7 +8,7 @@ version = "1.12.0"
 description = "Two-tier LLM delegation for Claude Code — free local LM Studio + strong cloud (Opencode Zen) behind a privacy guard"
 requires-python = ">=3.10"
 license = "MIT"
-authors = [{ name = "David Munoz" }]
+authors = [{ name = "local-llm-delegate contributors" }]
 keywords = ["claude", "llm", "delegation", "privacy", "lm-studio"]
 classifiers = [
     "Development Status :: 4 - Beta",

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 """CLI wrapper for a strong secondary cloud LLM (Opencode Zen, OpenAI-compatible).
 
 Same interface as llm_local.py (it reuses its engine), but targets a

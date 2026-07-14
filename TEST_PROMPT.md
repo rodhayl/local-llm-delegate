@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 # End-to-End Test Plan for local-llm-delegate
 
 Run every section below sequentially. Each section is independent — a failure in one doesn't block the others. Report pass/fail per section with the actual output.
@@ -6,7 +8,7 @@ Run every section below sequentially. Each section is independent — a failure 
 
 - LM Studio running locally with a model loaded (default endpoint `http://127.0.0.1:1234`)
 - `OPENCODE_API_KEY` set in env or `~/.claude/settings.json`
-- Run from the repo root: `/mnt/d/GitHub/local-llm-delegate`
+- Run from the repo root: `.`
 - **WSL users:** LM Studio on Windows is not reachable via `localhost`. Use the gateway IP:
   ```bash
   export LOCAL_LLM_URL=http://$(ip route show default | awk '{print $3}'):1234

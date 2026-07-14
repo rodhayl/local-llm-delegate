@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 # Fleet review runbook — swarm the whole codebase, audited before return
 
 Fan a swarm of strong-model agents across an entire codebase to find ALL issues,

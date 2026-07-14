@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 Draft ONE conventional-commit message from the staged diff in the input. Output ONLY the
 message — no preamble, no fences, nothing else. Format:
   type(scope): concise subject in imperative mood, <=72 chars

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 # Changelog — local-llm-delegate
 
 Versions track the exportable engine (`llm_local.py` + `llm_strong.py`) and skill docs.

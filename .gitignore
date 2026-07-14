@@ -17,6 +17,7 @@ env/
 # IDE
 .vscode/
 .idea/
+.kilo/
 *.swp
 *.swo
 *~

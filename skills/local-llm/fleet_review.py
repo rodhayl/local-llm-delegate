@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 """Fleet review — fan out a swarm of strong-model agents over a whole codebase.
 
 The fleet COMMANDER (this script, run locally) sends as many strong-model worker

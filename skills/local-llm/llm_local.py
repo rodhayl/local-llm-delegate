@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 """CLI wrapper for the local LM Studio LLM (OpenAI-compatible API).
 
 Lets agents delegate non-critical analysis (summarization, extraction,

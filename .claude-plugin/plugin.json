@@ -3,6 +3,6 @@
   "description": "Delegate analysis to save API tokens: bulk work goes to a free local LM Studio LLM (tool use + vision); hard reasoning goes to a strong cloud model (Opencode Zen) behind a privacy guard (deny-list + redaction, ON by default). Ships stdlib-only wrapper scripts and a skill teaching agents when and how to delegate.",
   "version": "1.12.0",
   "author": {
-    "name": "David Munoz"
+    "name": "local-llm-delegate contributors"
   }
 }

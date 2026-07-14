@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 # TEST_PROMPT.md — Full Execution Report
 
 **Date:** 2026-07-14
@@ -11,16 +13,16 @@
 | Component | Value |
 |-----------|-------|
 | OS | WSL2 (Linux) on Windows host |
-| Python | `python3` (not `python`) |
-| Repo Root | `/mnt/d/GitHub/local-llm-delegate` |
+| Python | `python` |
+| Repo Root | `.` |
 | LM Studio | Running on Windows, accessible from WSL via gateway IP |
-| Local Endpoint | `http://172.21.112.1:1234` (env: `LOCAL_LLM_URL`) |
+| Local Endpoint | `http://localhost:1234` (env: `LOCAL_LLM_URL`) |
 | Local Model | `gemma-4-12b-it-qat` (loaded in LM Studio) |
 | Strong Endpoint | `https://opencode.ai/zen/v1` (via `OPENCODE_API_KEY`) |
 | Strong Model | `deepseek-v4-flash-free` (env: `OPENCODE_MODEL`, `OPENCODE_MODEL_OPEN`) |
-| API Key Source | `C:/Users/rulfe/.claude/settings.json` |
+| API Key Source | `~/.claude/settings.json` |
 
-**WSL Networking Note:** LM Studio runs on Windows. From WSL2, `localhost:1234` is unreachable. The Windows host IP is obtained via the WSL gateway (`ip route show default` → `172.21.112.1`). All local-tier tests required `LOCAL_LLM_URL=http://172.21.112.1:1234` and `--model gemma-4-12b-it-qat` to be passed explicitly (the default model `qwen3.6-35b-a3b-mtp` was not loaded).
+**WSL Networking Note:** LM Studio runs on Windows. From WSL2, `localhost:1234` is unreachable. The Windows host IP is obtained via the WSL gateway (`ip route show default` → `localhost`). All local-tier tests required `LOCAL_LLM_URL=http://localhost:1234` and `--model gemma-4-12b-it-qat` to be passed explicitly (the default model `qwen3.6-35b-a3b-mtp` was not loaded).
 
 ---
 
@@ -30,7 +32,7 @@
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --check
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --check
 ```
 
 **Expected:** prints `available: <model-list>`, exit 0
@@ -50,7 +52,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --version
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --version
 ```
 
 **Expected:** prints `llm_local.py 1.11.3`, exit 0
@@ -69,7 +71,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What is 2+2? Answer with just the number."
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What is 2+2? Answer with just the number."
 ```
 
 **Expected:** prints `4`, exit 0
@@ -89,7 +91,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "List 3 Python stdlib modules" --caveman
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "List 3 Python stdlib modules" --caveman
 ```
 
 **Expected:** terse output, no preamble, exit 0
@@ -111,7 +113,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Explain what a hash table is" --caveman --max-words 30
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Explain what a hash table is" --caveman --max-words 30
 ```
 
 **Expected:** answer ≤ 45 words (1.5x budget), exit 0
@@ -131,7 +133,7 @@ Word count: 37 (≤ 45). Exit code: 0
 
 **Command:**
 ```bash
-echo -e "ERROR: disk full\nWARNING: low memory\nINFO: startup complete" | LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What is the most critical issue?" --stdin --caveman
+echo -e "ERROR: disk full\nWARNING: low memory\nINFO: startup complete" | LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What is the most critical issue?" --stdin --caveman
 ```
 
 **Expected:** identifies disk full as critical, exit 0
@@ -151,7 +153,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Summarize this file in 10 words" -f skills/local-llm/llm_local.py --caveman --max-words 15
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Summarize this file in 10 words" -f skills/local-llm/llm_local.py --caveman --max-words 15
 ```
 
 **Expected:** brief summary of the file, exit 0
@@ -172,7 +174,7 @@ Exit code: 0
 
 **1.8a — Head:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What's in the first 2KB?" -f skills/local-llm/llm_local.py --head-kb 2 --caveman --max-words 20
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What's in the first 2KB?" -f skills/local-llm/llm_local.py --head-kb 2 --caveman --max-words 20
 ```
 
 **Actual:**
@@ -185,7 +187,7 @@ Exit code: 0
 
 **1.8b — Tail:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What's in the last 2KB?" -f skills/local-llm/llm_local.py --tail-kb 2 --caveman --max-words 20
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What's in the last 2KB?" -f skills/local-llm/llm_local.py --tail-kb 2 --caveman --max-words 20
 ```
 
 **Actual:**
@@ -206,7 +208,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Write the word HELLO" --out /tmp/test_llm_out.txt --caveman
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Write the word HELLO" --out /tmp/test_llm_out.txt --caveman
 ```
 
 **Expected:** file `/tmp/test_llm_out.txt` contains HELLO, preview printed to stdout, exit 0
@@ -227,7 +229,7 @@ File contents verified: `HELLO`
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Return a JSON object with key 'answer' and value 42" --json
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Return a JSON object with key 'answer' and value 42" --json
 ```
 
 **Expected:** valid JSON `{"answer":42}`, exit 0
@@ -247,7 +249,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What model are you?" --system "You are a pirate. Answer in pirate speak." --caveman --max-words 20
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What model are you?" --system "You are a pirate. Answer in pirate speak." --caveman --max-words 20
 ```
 
 **Expected:** pirate-themed answer, exit 0
@@ -267,7 +269,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Say OK" --timeout 30
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Say OK" --timeout 30
 ```
 
 **Expected:** prints OK, exit 0
@@ -289,7 +291,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "How many .py files are in the skills/local-llm directory? Use run_python to count." --tools --caveman --max-words 20
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "How many .py files are in the skills/local-llm directory? Use run_python to count." --tools --caveman --max-words 20
 ```
 
 **Expected:** correct count (4 .py files), exit 0
@@ -312,7 +314,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Count the lines in skills/local-llm/llm_local.py using run_python" --tools --caveman --max-words 20
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Count the lines in skills/local-llm/llm_local.py using run_python" --tools --caveman --max-words 20
 ```
 
 **Expected:** line count, exit 0
@@ -335,7 +337,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "import time; time.sleep(1); print('done')" --tools --run-python-timeout 10 --caveman
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "import time; time.sleep(1); print('done')" --tools --run-python-timeout 10 --caveman
 ```
 
 **Expected:** prints "done", exit 0
@@ -358,7 +360,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Print exactly 15000 characters using run_python" --tools --caveman --max-words 20
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Print exactly 15000 characters using run_python" --tools --caveman --max-words 20
 ```
 
 **Expected:** output truncated at 10000 chars (TOOL_OUTPUT_CAP), exit 0
@@ -383,7 +385,7 @@ Tool output shows `(18 chars)` — truncation applied at tool handler level befo
 
 **Command:**
 ```bash
-echo -e "ERROR: Connection refused\nINFO: Server started\nWARNING: High memory" | LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook triage --stdin --caveman --max-words 30
+echo -e "ERROR: Connection refused\nINFO: Server started\nWARNING: High memory" | LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook triage --stdin --caveman --max-words 30
 ```
 
 **Expected:** identifies connection error as top finding, exit 0
@@ -407,7 +409,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook summarize -f skills/local-llm/SKILL.md --caveman --max-words 50
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook summarize -f skills/local-llm/SKILL.md --caveman --max-words 50
 ```
 
 **Expected:** structured summary (PURPOSE, KEY DECISIONS, etc.), exit 0
@@ -442,7 +444,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook count "How many .md files are in skills/local-llm/runbooks/" --caveman --max-words 20
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook count "How many .md files are in skills/local-llm/runbooks/" --caveman --max-words 20
 ```
 
 **Expected:** correct count (9 .md files), exit 0
@@ -467,7 +469,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-echo "--- a/test.py\n+++ b/test.py\n@@ -1 +1 @@\n-old\n+new" | LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook commit --stdin --caveman --max-words 30
+echo "--- a/test.py\n+++ b/test.py\n@@ -1 +1 @@\n-old\n+new" | LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook commit --stdin --caveman --max-words 30
 ```
 
 **Expected:** conventional commit message, exit 0
@@ -487,7 +489,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-echo "CLAIM: Python is a compiled language" | LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook supervise --stdin --caveman --max-words 30
+echo "CLAIM: Python is a compiled language" | LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook supervise --stdin --caveman --max-words 30
 ```
 
 **Expected:** DISAGREE verdict, exit 0
@@ -509,14 +511,14 @@ Exit code: 0
 
 **Command:**
 ```bash
-python3 skills/local-llm/llm_local.py --runbook nonexistent "test" 2>&1; echo "exit: $?"
+python skills/local-llm/llm_local.py --runbook nonexistent "test" 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error listing available runbooks, exit 1
 
 **Actual:**
 ```
-error: runbook 'nonexistent' not found (searched: ['/mnt/d/GitHub/local-llm-delegate/skills/local-llm/runbooks/nonexistent.md']). Bundled runbooks: commit, count, fleet, improve, review, summarize, supervise, triage, watch
+error: runbook 'nonexistent' not found (searched: ['./skills/local-llm/runbooks/nonexistent.md']). Bundled runbooks: commit, count, fleet, improve, review, summarize, supervise, triage, watch
 exit: 1
 ```
 
@@ -528,7 +530,7 @@ exit: 1
 
 **Command:**
 ```bash
-echo "test" > /tmp/test_runbook.md && LLM_RUNBOOK_DIR=/tmp LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook test_runbook "say OK" --caveman 2>&1 | head -5
+echo "test" > /tmp/test_runbook.md && LLM_RUNBOOK_DIR=/tmp LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat --runbook test_runbook "say OK" --caveman 2>&1 | head -5
 ```
 
 **Expected:** `[runbook] loaded from $LLM_RUNBOOK_DIR:` warning on stderr, exit 0
@@ -551,7 +553,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Count the total lines across all Python files in skills/local-llm/" --chunk --chunk-kb 1 --tools --caveman --max-words 30
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Count the total lines across all Python files in skills/local-llm/" --chunk --chunk-kb 1 --tools --caveman --max-words 30
 ```
 
 **Expected:** processes in chunks, returns total count, exit 0
@@ -574,7 +576,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-python3 -c "print('\n'.join(['line ' + str(i) for i in range(500)]))" | LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "How many lines? Just the number." --chunk --chunk-kb 1 --stdin --caveman --max-words 5
+python -c "print('\n'.join(['line ' + str(i) for i in range(500)]))" | LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "How many lines? Just the number." --chunk --chunk-kb 1 --stdin --caveman --max-words 5
 ```
 
 **Expected:** returns a count near 500 (LLM counting may vary), exit 0
@@ -600,7 +602,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Summarize this codebase in 10 words" -f skills/local-llm/llm_local.py --chunk --chunk-kb 1 --caveman --max-words 15
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Summarize this codebase in 10 words" -f skills/local-llm/llm_local.py --chunk --chunk-kb 1 --caveman --max-words 15
 ```
 
 **Expected:** brief summary based on chunked input, exit 0
@@ -628,13 +630,13 @@ Exit code: 0
 
 **Setup:**
 ```bash
-python3 -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='red'); img.save('/tmp/test_red.png'); print('created')"
+python -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='red'); img.save('/tmp/test_red.png'); print('created')"
 ```
 Output: `created`
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What color is this image?" -i /tmp/test_red.png --caveman --max-words 10
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What color is this image?" -i /tmp/test_red.png --caveman --max-words 10
 ```
 
 **Expected:** says "red", exit 0 (or graceful error if model doesn't support vision)
@@ -657,7 +659,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-python3 skills/local-llm/llm_local.py 2>&1; echo "exit: $?"
+python skills/local-llm/llm_local.py 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error message, exit 1
@@ -676,7 +678,7 @@ exit: 1
 
 **Command:**
 ```bash
-python3 skills/local-llm/llm_local.py "test" --head-kb 10 --tail-kb 10 2>&1; echo "exit: $?"
+python skills/local-llm/llm_local.py "test" --head-kb 10 --tail-kb 10 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error about mutual exclusion, exit 1
@@ -695,7 +697,7 @@ exit: 1
 
 **Command:**
 ```bash
-python3 skills/local-llm/llm_local.py "test" -f "nonexistent_file_*.txt" 2>&1; echo "exit: $?"
+python skills/local-llm/llm_local.py "test" -f "nonexistent_file_*.txt" 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error about no matching files, exit 1
@@ -714,7 +716,7 @@ exit: 1
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://127.0.0.1:9999 python3 skills/local-llm/llm_local.py --check 2>&1; echo "exit: $?"
+LOCAL_LLM_URL=http://127.0.0.1:9999 python skills/local-llm/llm_local.py --check 2>&1; echo "exit: $?"
 ```
 
 **Expected:** "unavailable" message, exit 1
@@ -735,7 +737,7 @@ exit: 1
 
 **Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." OPENCODE_MODEL="deepseek-v4-flash-free" OPENCODE_MODEL_OPEN="deepseek-v4-flash-free" python3 skills/local-llm/llm_strong.py --check
+OPENCODE_API_KEY="sk-..." OPENCODE_MODEL="deepseek-v4-flash-free" OPENCODE_MODEL_OPEN="deepseek-v4-flash-free" python skills/local-llm/llm_strong.py --check
 ```
 
 **Expected:** prints model list, exit 0 (requires OPENCODE_API_KEY)
@@ -755,7 +757,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." OPENCODE_MODEL="deepseek-v4-flash-free" OPENCODE_MODEL_OPEN="deepseek-v4-flash-free" python3 skills/local-llm/llm_strong.py --dry-run "test"
+OPENCODE_API_KEY="sk-..." OPENCODE_MODEL="deepseek-v4-flash-free" OPENCODE_MODEL_OPEN="deepseek-v4-flash-free" python skills/local-llm/llm_strong.py --dry-run "test"
 ```
 
 **Expected:** prints `[dry-run] model=... tier=... escalate=...`, no API call, exit 0
@@ -775,7 +777,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-python3 skills/local-llm/llm_strong.py --version
+python skills/local-llm/llm_strong.py --version
 ```
 
 **Expected:** prints version, exit 0
@@ -794,7 +796,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." OPENCODE_MODEL="deepseek-v4-flash-free" OPENCODE_MODEL_OPEN="deepseek-v4-flash-free" python3 skills/local-llm/llm_strong.py "What is 2+2? Just the number." --caveman --max-words 5
+OPENCODE_API_KEY="sk-..." OPENCODE_MODEL="deepseek-v4-flash-free" OPENCODE_MODEL_OPEN="deepseek-v4-flash-free" python skills/local-llm/llm_strong.py "What is 2+2? Just the number." --caveman --max-words 5
 ```
 
 **Expected:** prints `4`, stderr shows `[privacy] ON`, exit 0
@@ -816,7 +818,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." OPENCODE_MODEL="deepseek-v4-flash-free" OPENCODE_MODEL_OPEN="deepseek-v4-flash-free" python3 skills/local-llm/llm_strong.py "What is 2+2? Just the number." --no-privacy --caveman --max-words 5
+OPENCODE_API_KEY="sk-..." OPENCODE_MODEL="deepseek-v4-flash-free" OPENCODE_MODEL_OPEN="deepseek-v4-flash-free" python skills/local-llm/llm_strong.py "What is 2+2? Just the number." --no-privacy --caveman --max-words 5
 ```
 
 **Expected:** prints `4`, stderr shows `[privacy] OFF` + WARNING, exit 0
@@ -839,7 +841,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-OPENCODE_API_KEY= python3 skills/local-llm/llm_strong.py "test" 2>&1; echo "exit: $?"
+OPENCODE_API_KEY= python skills/local-llm/llm_strong.py "test" 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error about missing OPENCODE_API_KEY, exit 1
@@ -863,7 +865,7 @@ exit: 1
 
 **Command:**
 ```bash
-echo "SECRET=abc123" > /tmp/test.env && OPENCODE_API_KEY="sk-..." ... python3 skills/local-llm/llm_strong.py "read this" -f /tmp/test.env --caveman 2>&1; echo "exit: $?"
+echo "SECRET=abc123" > /tmp/test.env && OPENCODE_API_KEY="sk-..." ... python skills/local-llm/llm_strong.py "read this" -f /tmp/test.env --caveman 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error about denied file pattern, exit 1
@@ -884,7 +886,7 @@ exit: 1
 
 **Command:**
 ```bash
-ln -sf /tmp/test.env /tmp/test_symlink.env 2>/dev/null && OPENCODE_API_KEY="sk-..." ... python3 skills/local-llm/llm_strong.py "read this" -f /tmp/test_symlink.env --caveman 2>&1; echo "exit: $?"
+ln -sf /tmp/test.env /tmp/test_symlink.env 2>/dev/null && OPENCODE_API_KEY="sk-..." ... python skills/local-llm/llm_strong.py "read this" -f /tmp/test_symlink.env --caveman 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error about symlink, exit 1
@@ -905,7 +907,7 @@ exit: 1
 
 **Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." ... python3 skills/local-llm/llm_strong.py "describe" -i /tmp/test_red.png --caveman 2>&1; echo "exit: $?"
+OPENCODE_API_KEY="sk-..." ... python skills/local-llm/llm_strong.py "describe" -i /tmp/test_red.png --caveman 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error about image blocked in privacy mode, exit 1
@@ -926,7 +928,7 @@ exit: 1
 
 **Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." ... python3 skills/local-llm/llm_strong.py "count to 5" --tools --caveman 2>&1; echo "exit: $?"
+OPENCODE_API_KEY="sk-..." ... python skills/local-llm/llm_strong.py "count to 5" --tools --caveman 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error about tools blocked in privacy mode, exit 1
@@ -947,7 +949,7 @@ exit: 1
 
 **Command:**
 ```bash
-python3 skills/local-llm/llm_strong.py "test" --confidential-tools --no-privacy 2>&1; echo "exit: $?"
+python skills/local-llm/llm_strong.py "test" --confidential-tools --no-privacy 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error about mutual exclusion, exit 1
@@ -968,7 +970,7 @@ exit: 1
 
 **Fixed Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." ... python3 skills/local-llm/llm_strong.py "Print this exact text: API_KEY=sk-abc123def456ghi789" --caveman --max-words 30 2>&1 | grep -o "REDACTED"
+OPENCODE_API_KEY="sk-..." ... python skills/local-llm/llm_strong.py "Print this exact text: API_KEY=sk-abc123def456ghi789" --caveman --max-words 30 2>&1 | grep -o "REDACTED"
 ```
 
 **Expected:** `REDACTED` appears in output (redaction worked)
@@ -1001,7 +1003,7 @@ Grep output: `REDACTED`
 
 **Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." ... python3 skills/local-llm/llm_strong.py "Use consult_local to ask: what is 2+2?" --consult-local --no-privacy --caveman --max-words 20
+OPENCODE_API_KEY="sk-..." ... python skills/local-llm/llm_strong.py "Use consult_local to ask: what is 2+2?" --consult-local --no-privacy --caveman --max-words 20
 ```
 
 **Expected:** answer mentions 4, stderr shows `[tool] consult_local`, exit 0
@@ -1026,7 +1028,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." ... python3 skills/local-llm/llm_strong.py "Use consult_local to ask: what is the capital of France?" --consult-local --caveman --max-words 20
+OPENCODE_API_KEY="sk-..." ... python skills/local-llm/llm_strong.py "Use consult_local to ask: what is the capital of France?" --consult-local --caveman --max-words 20
 ```
 
 **Expected:** answer mentions Paris, stderr shows `[tool] consult_local` and `[privacy] ON`, exit 0
@@ -1050,7 +1052,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." ... python3 skills/local-llm/llm_strong.py "Use consult_local to ask: list 3 prime numbers" --consult-local --no-privacy --caveman --max-words 20
+OPENCODE_API_KEY="sk-..." ... python skills/local-llm/llm_strong.py "Use consult_local to ask: list 3 prime numbers" --consult-local --no-privacy --caveman --max-words 20
 ```
 
 **Expected:** answer lists 3 prime numbers, stderr shows `[tool] consult_local`, exit 0
@@ -1077,7 +1079,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-OPENCODE_API_KEY="sk-..." ... python3 skills/local-llm/llm_strong.py "Say OK" --no-escalate --no-privacy --caveman --max-words 5
+OPENCODE_API_KEY="sk-..." ... python skills/local-llm/llm_strong.py "Say OK" --no-escalate --no-privacy --caveman --max-words 5
 ```
 
 **Expected:** prints OK, no escalation banner, exit 0
@@ -1102,7 +1104,7 @@ Exit code: 0. No escalation banner present.
 
 **Command:**
 ```bash
-python3 skills/local-llm/fleet_review.py --scope "skills/local-llm/*.py" --dry-run
+python skills/local-llm/fleet_review.py --scope "skills/local-llm/*.py" --dry-run
 ```
 
 **Expected:** prints FLEET PLAN with file counts, no agents spawned, exit 0
@@ -1125,7 +1127,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-python3 skills/local-llm/fleet_review.py --scope "skills/local-llm/*.py" --confidential-glob "*.py" --dry-run
+python skills/local-llm/fleet_review.py --scope "skills/local-llm/*.py" --confidential-glob "*.py" --dry-run
 ```
 
 **Expected:** all files classified as confidential, exit 0
@@ -1149,7 +1151,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-OPENCODE_API_KEY= python3 skills/local-llm/fleet_review.py --scope "." 2>&1; echo "exit: $?"
+OPENCODE_API_KEY= python skills/local-llm/fleet_review.py --scope "." 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error about missing OPENCODE_API_KEY, exit 1
@@ -1177,7 +1179,7 @@ ls -la .llm_delegate/usage.jsonl 2>/dev/null && echo "exists" || echo "not yet"
 
 **Actual:**
 ```
--rwxrwxrwx 1 wishmaster wishmaster 5164 Jul 14 06:05 .llm_delegate/usage.jsonl
+-rwxrwxrwx 1 user user 5164 Jul 14 06:05 .llm_delegate/usage.jsonl
 exists
 ```
 
@@ -1189,7 +1191,7 @@ exists
 
 **Command:**
 ```bash
-python3 skills/local-llm/delegation_savings.py --session 2>&1 | head -5
+python skills/local-llm/delegation_savings.py --session 2>&1 | head -5
 ```
 
 **Expected:** prints token savings summary
@@ -1211,7 +1213,7 @@ python3 skills/local-llm/delegation_savings.py --session 2>&1 | head -5
 
 **Command:**
 ```bash
-python3 skills/local-llm/delegation_savings.py --json 2>/dev/null | python3 -m json.tool > /dev/null && echo "valid JSON" || echo "invalid"
+python skills/local-llm/delegation_savings.py --json 2>/dev/null | python -m json.tool > /dev/null && echo "valid JSON" || echo "invalid"
 ```
 
 **Expected:** valid JSON output
@@ -1231,7 +1233,7 @@ valid JSON
 
 **Command:**
 ```bash
-python3 -c "print('x' * 250000)" | LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "summarize" --stdin --caveman 2>&1; echo "exit: $?"
+python -c "print('x' * 250000)" | LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "summarize" --stdin --caveman 2>&1; echo "exit: $?"
 ```
 
 **Expected:** error about input exceeding 240KB cap, exit 1
@@ -1250,7 +1252,7 @@ exit: 1
 
 **Command:**
 ```bash
-echo "" | LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "say OK" --stdin --caveman
+echo "" | LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "say OK" --stdin --caveman
 ```
 
 **Expected:** prints OK, exit 0
@@ -1270,7 +1272,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-echo "日本語テスト" | LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What language is this? One word." --stdin --caveman --max-words 5
+echo "日本語テスト" | LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "What language is this? One word." --stdin --caveman --max-words 5
 ```
 
 **Expected:** says "Japanese", exit 0
@@ -1290,7 +1292,7 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat 'What is $PATH? Just say environment variable' --caveman --max-words 5
+LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat 'What is $PATH? Just say environment variable' --caveman --max-words 5
 ```
 
 **Expected:** says "environment variable", exit 0
@@ -1312,8 +1314,8 @@ Exit code: 0
 
 **Command:**
 ```bash
-LOCAL_OUT=$(echo "The server is down" | LOCAL_LLM_URL=http://172.21.112.1:1234 python3 skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Summarize in 5 words" --stdin --caveman --max-words 10 2>/dev/null)
-echo "$LOCAL_OUT" | OPENCODE_API_KEY="sk-..." ... python3 skills/local-llm/llm_strong.py "The original text is: The server is down. The summary above is: (see stdin). Does the summary faithfully represent the original? AGREE or DISAGREE." --stdin --no-privacy --caveman --max-words 10
+LOCAL_OUT=$(echo "The server is down" | LOCAL_LLM_URL=http://localhost:1234 python skills/local-llm/llm_local.py --model gemma-4-12b-it-qat "Summarize in 5 words" --stdin --caveman --max-words 10 2>/dev/null)
+echo "$LOCAL_OUT" | OPENCODE_API_KEY="sk-..." ... python skills/local-llm/llm_strong.py "The original text is: The server is down. The summary above is: (see stdin). Does the summary faithfully represent the original? AGREE or DISAGREE." --stdin --no-privacy --caveman --max-words 10
 ```
 
 **Expected:** strong model evaluates the local output (AGREE or DISAGREE with rationale), exit 0
@@ -1425,7 +1427,7 @@ Exit code: 0
 
 **Problem:** `LOCAL_LLM_URL` defaults to `http://127.0.0.1:1234` which is unreachable from WSL2 to a Windows-hosted LM Studio.
 
-**Resolution:** Set `LOCAL_LLM_URL=http://172.21.112.1:1234` (WSL gateway IP). This is an environment-specific issue, not a code defect.
+**Resolution:** Set `LOCAL_LLM_URL=http://localhost:1234` (WSL gateway IP). This is an environment-specific issue, not a code defect.
 
 **Recommendation:** Consider documenting WSL setup in README or adding auto-detection of the Windows host IP.
 

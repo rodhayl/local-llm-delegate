@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 ---
 name: local-llm
 description: Delegate analysis to cheaper LLMs to save API tokens. Two tiers — free local LM Studio for bulk work (logs, counting, vision, diffs) and strong cloud model (Opencode Zen) behind a privacy guard for judgment calls (review, synthesis, second opinions). Delegation is the DEFAULT: before every read that returns content you'd only skim, ask "conclusion or content?" — conclusion → delegate.

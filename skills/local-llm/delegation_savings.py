@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Delegation token-savings report.
 
 Reads the per-call usage JSONL written by llm_local.py / llm_strong.py and prints

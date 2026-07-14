@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 You are compressing a long document/file into only what an engineer must act on. Do NOT
 restate everything; extract decisions and obligations. Output, no preamble:
 - PURPOSE: one line

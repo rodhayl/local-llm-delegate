@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 ## LLM Delegates — two-tier split
 
 **Delegation is the DEFAULT, not an option.** Before every Read/Grep/file-dump that returns content you'd only skim, ask: "do I need the CONCLUSION or the content?" — conclusion → DELEGATE.

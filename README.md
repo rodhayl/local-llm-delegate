@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 # local-llm-delegate
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -57,7 +59,7 @@ See `skills/local-llm/runbooks/fleet.md` for details.
 ### Via Claude Code plugin marketplace (when available)
 ```bash
 claude plugin marketplace add <path-to-claude-plugins-folder>
-claude plugin install local-llm-delegate@rulfe-tools
+claude plugin install local-llm-delegate@local-llm-delegate
 ```
 ### Manual install
 Copy the `skills/local-llm/` directory into your Claude skills directory.
@@ -158,5 +160,5 @@ MIT — see [LICENSE](LICENSE) for details.
 ## Uninstall
 
 ```bash
-claude plugin uninstall local-llm-delegate@rulfe-tools
+claude plugin uninstall local-llm-delegate@local-llm-delegate
 ```

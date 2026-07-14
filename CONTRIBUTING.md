@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: MIT -->
+
 # Contributing to local-llm-delegate
 
 ## Development setup
