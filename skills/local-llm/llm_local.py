@@ -141,7 +141,7 @@ def model_available(backend: Backend, name: str) -> bool:
         req = urllib.request.Request(_endpoint(backend, "models"), headers=_headers(backend))
         with urllib.request.urlopen(req, timeout=10) as resp:
             return name in [m["id"] for m in json.load(resp).get("data", [])]
-    except (json.JSONDecodeError, Exception):
+    except (json.JSONDecodeError, urllib.error.HTTPError, urllib.error.URLError, OSError, TimeoutError):
         return False
 
 
