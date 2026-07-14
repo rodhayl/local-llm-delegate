@@ -130,7 +130,10 @@ ranks by severity, and returns a single compact table. Raw per-worker findings s
 (`.llm_delegate/fleet_report.md`). **Always `--dry-run` first** to preview the PAID-vs-FREE
 fan-out and cost. Knobs: `--files-per-worker`/`--kb-per-worker` (slice size), `--max-workers`
 (fan-out cap), `--concurrency` (default 2, hard-capped at 2 — higher fan-out errors out), `--worker-max-words`/
-`--max-words` (budgets). Full details in `runbooks/fleet.md`.
+`--max-words` (budgets), `--scope`/`--paths` (file selection), `--include-ext` (extra extensions),
+`--worker-runbook` (swap worker review runbook), `--worker-timeout`/`--audit-timeout` (per-stage timeouts),
+`--audit-no-privacy` (run auditor without privacy), `--no-audit` (skip audit pass), `--out` (write report to file).
+Full details in `runbooks/fleet.md`.
 
 The `review` runbook is tuned against FALSE POSITIVES (in practice strong-model review
 over-flags hardened code >50%): every finding is tagged HIGH/MED/LOW confidence, it refuses

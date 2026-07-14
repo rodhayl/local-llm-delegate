@@ -168,7 +168,20 @@ def run_worker(root: Path, files: list[str], paid: bool, max_words: int,
     for rel in files:
         cmd += ["-f", str(root / rel)]
     t0 = time.time()
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 60)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 60)
+    except subprocess.TimeoutExpired:
+        return {
+            "files": files, "paid": paid, "ok": False, "findings": "",
+            "err": f"worker timed out after {timeout + 60}s",
+            "secs": round(time.time() - t0, 1), "ptok": 0, "ctok": 0,
+        }
+    except OSError as exc:
+        return {
+            "files": files, "paid": paid, "ok": False, "findings": "",
+            "err": f"worker failed to start: {exc}",
+            "secs": round(time.time() - t0, 1), "ptok": 0, "ctok": 0,
+        }
     pt, ct = sum_tokens(proc.stderr)
     return {
         "files": files, "paid": paid, "ok": proc.returncode == 0,
@@ -216,7 +229,18 @@ def run_auditor(merged: str, root: Path, max_words: int, timeout: int,
     if no_privacy:
         cmd.append("--no-privacy")
     t0 = time.time()
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 60)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 60)
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False, "report": "", "err": f"auditor timed out after {timeout + 60}s",
+            "raw_path": str(tmp), "secs": round(time.time() - t0, 1), "ptok": 0, "ctok": 0,
+        }
+    except OSError as exc:
+        return {
+            "ok": False, "report": "", "err": f"auditor failed to start: {exc}",
+            "raw_path": str(tmp), "secs": round(time.time() - t0, 1), "ptok": 0, "ctok": 0,
+        }
     pt, ct = sum_tokens(proc.stderr)
     return {
         "ok": proc.returncode == 0, "report": (proc.stdout or "").strip(),

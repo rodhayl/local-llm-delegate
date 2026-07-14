@@ -141,7 +141,7 @@ def model_available(backend: Backend, name: str) -> bool:
         req = urllib.request.Request(_endpoint(backend, "models"), headers=_headers(backend))
         with urllib.request.urlopen(req, timeout=10) as resp:
             return name in [m["id"] for m in json.load(resp).get("data", [])]
-    except Exception:
+    except (json.JSONDecodeError, Exception):
         return False
 
 
@@ -149,7 +149,11 @@ def check(backend: Backend) -> int:
     try:
         req = urllib.request.Request(_endpoint(backend, "models"), headers=_headers(backend))
         with urllib.request.urlopen(req, timeout=10) as resp:
-            models = [m["id"] for m in json.load(resp).get("data", [])]
+            try:
+                models = [m["id"] for m in json.load(resp).get("data", [])]
+            except json.JSONDecodeError:
+                print("error: received invalid JSON from endpoint", file=sys.stderr)
+                return 1
         if not models:
             print("unavailable: endpoint up but no models loaded", file=sys.stderr)
             return 1
@@ -196,7 +200,10 @@ def gather_input(args) -> str:
     parts = []
     total = 0
     for name in names:
-        text = Path(name).read_text(encoding="utf-8", errors="replace")
+        try:
+            text = Path(name).read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            sys.exit(f"error: cannot read {name}: {exc}")
         if args.head_kb:
             text = text[: args.head_kb * 1024]
         if args.tail_kb:
@@ -215,7 +222,10 @@ def image_part(path: str) -> dict:
     mime = MIME.get(p.suffix.lower())
     if not mime:
         sys.exit(f"error: unsupported image type {p.suffix} ({path})")
-    raw = p.read_bytes()
+    try:
+        raw = p.read_bytes()
+    except OSError as exc:
+        sys.exit(f"error: cannot read image {path}: {exc}")
     if len(raw) > MAX_IMAGE_BYTES:
         sys.exit(f"error: image {path} is {len(raw)} bytes > {MAX_IMAGE_BYTES}")
     b64 = base64.b64encode(raw).decode()
@@ -238,6 +248,8 @@ def post_chat(args, body: dict, backend: Backend) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=args.timeout) as resp:
             return json.load(resp)
+    except json.JSONDecodeError:
+        sys.exit(f"error: {backend.name} returned invalid JSON (check if the endpoint is serving a model)")
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")[:500]
         if exc.code == 429:
