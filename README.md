@@ -70,6 +70,47 @@ python skills/local-llm/llm_strong.py --check   # strong: needs OPENCODE_API_KEY
 ```
 Exit code 1 indicates endpoint failure, missing config, or a privacy refusal.
 
+## Testing & validation
+
+### End-to-end test plan
+
+`TEST_PROMPT.md` is a 58-test end-to-end test plan covering all features across 14 phases:
+
+| Phase | Tests | What it covers |
+|-------|-------|----------------|
+| 1 | 1.1–1.12 | Local tier basics (check, version, prompts, caveman, max-words, stdin, file inline, head/tail, --out, --json, --system, --timeout) |
+| 2 | 2.1–2.4 | Local tier tools (run_python, file paths, timeout, output truncation) |
+| 3 | 3.1–3.7 | Runbooks (triage, summarize, count, commit, supervise, unknown runbook, $LLM_RUNBOOK_DIR) |
+| 4 | 4.1–4.3 | Chunking (chunk mode, chunk+stdin, chunk text) |
+| 5 | 5.1 | Vision (color detection) |
+| 6 | 6.1–6.4 | Error handling (no prompt, mutual exclusion, no matching files, unavailable endpoint) |
+| 7 | 7.1–7.6 | Strong tier basics (check, dry-run, version, privacy ON/OFF, missing API key) |
+| 8 | 8.1–8.6 | Privacy guard (deny-list, symlink, image block, tools block, conflicts, redaction) |
+| 9 | 9.1–9.3 | Consult-local (basic, privacy mode, chained questions) |
+| 10 | 10.1 | Escalation control (--no-escalate) |
+| 11 | 11.1–11.3 | Fleet review (dry-run, confidential glob, missing key) |
+| 12 | 12.1–12.3 | Telemetry (usage log, savings report, JSON output) |
+| 13 | 13.1–13.4 | Edge cases (long input cap, empty input, unicode, special characters) |
+| 14 | 14.1 | Cross-tier integration (local → strong supervision with hallucination catch) |
+
+### Results
+
+`TEST_PROMPT_REPORT.md` contains the full execution report with per-test output. Summary:
+
+| Metric | Value |
+|--------|-------|
+| Total tests | 58 |
+| Passed | 58 |
+| Failed | 0 |
+| Test plan fixes | 1 (test 8.6: removed `--no-privacy` to enable redaction) |
+
+### How this was validated
+
+- **Test plan execution**: All 58 tests run sequentially against a live LM Studio instance (local tier) and Opencode Zen API (strong tier), with actual output captured verbatim in `TEST_PROMPT_REPORT.md`.
+- **Cross-tier supervision validated**: Test 14.1 confirmed the strong model catches local model hallucinations — the local model added "System down" to a summary of "The server is down", and the strong model correctly returned `DISAGREE`.
+- **Privacy guard validated**: All 6 privacy tests (8.1–8.6) confirmed deny-list, symlink detection, image/tools blocking, and secret redaction work correctly.
+- **Production use**: This tool is used daily in another project for log triage, code review delegation, and confidential data processing — the test plan exercises the same code paths used in production.
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -99,7 +140,11 @@ Exit code 1 indicates endpoint failure, missing config, or a privacy refusal.
 ### Configuration
 - `.claude-plugin/plugin.json` — Plugin manifest
 - `skills/local-llm/SKILL.md` — Agent-facing rules, flags, and playbook
-- `skills/local-llm/runbooks/` — Prompt templates (`triage`, `summarize`, `count`, `review`, `commit`, `supervise`, `watch`, `fleet`)
+- `skills/local-llm/runbooks/` — Prompt templates (`triage`, `summarize`, `count`, `review`, `commit`, `supervise`, `watch`, `fleet`, `improve`)
+
+### Testing
+- `TEST_PROMPT.md` — 58-test end-to-end test plan (14 phases)
+- `TEST_PROMPT_REPORT.md` — Full execution report with per-test output
 
 ### Project integration
 - `AGENTS_SNIPPET.md` — Paste into your project's AGENTS.md

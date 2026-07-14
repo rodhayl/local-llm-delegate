@@ -129,7 +129,7 @@ def _endpoint(backend: Backend, name: str) -> str:
 
 def _headers(backend: Backend) -> dict:
     # Cloudflare-fronted gateways reject the default Python-urllib UA (error 1010).
-    h = {"Content-Type": "application/json", "User-Agent": "llm-delegate/1.2"}
+    h = {"Content-Type": "application/json", "User-Agent": "llm-delegate/1.12.0"}
     if backend.api_key:
         h["Authorization"] = f"Bearer {backend.api_key}"
     return h
@@ -568,7 +568,7 @@ def build_parser(default_model: Optional[str] = DEFAULT_MODEL, description: Opti
     ap.add_argument("--check", action="store_true", help="probe endpoint availability and exit")
     ap.add_argument("--require-model", default=None,
                     help="preflight: exit non-zero unless this model id is loaded at the endpoint")
-    ap.add_argument("--version", action="version", version=f"%(prog)s 1.11.3")
+    ap.add_argument("--version", action="version", version=f"%(prog)s 1.12.0")
     return ap
 
 

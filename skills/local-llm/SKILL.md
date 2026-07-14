@@ -76,8 +76,22 @@ Verified: 100k-token logs triaged into 3 bullets; 10MB JSON explored via tools w
 | `--out FILE` | long answer to disk, 15-line preview to stdout |
 | `--timeout S` | adaptive: 900s floor + ~12s/KB of inlined input, capped at 3600s |
 | `--version` | print version and exit |
+| `--check` | probe the endpoint and list loaded models (exit 0 if available, 1 if not) |
+| `--system PROMPT` | custom system prompt (overrides default) |
+| `--model NAME` | model override (default: `qwen3.6-35b-a3b-mtp` local, `OPENCODE_MODEL` strong) |
+| `--temperature F` | model temperature (default: 0.2) |
+| `--max-tokens N` | response length limit |
+| `--no-retry` | disable auto-retry on empty/truncated answers |
+| `--show-reasoning` | print model reasoning to stderr |
+| `--require-model NAME` | exit non-zero unless that model is loaded (preflight check) |
+| `--max-tool-rounds N` | max tool-call rounds (default: 5) |
+| `--run-python-timeout S` | per-call subprocess timeout for `run_python` (default: 30s) |
 | `--no-privacy` | strong tier only: disable deny-list/redaction/blocks |
 | `--consult-local` | strong tier only: strong model may query the free local LLM mid-reasoning (privacy-safe; both question and local answer redacted before upload) |
+| `--confidential-tools` | strong tier + privacy: run `run_python` with ALL tool output redacted before upload; requires `--allow-script` for subprocesses |
+| `--allow-script NAME` | (repeatable) allowlist scripts for `--confidential-tools` subprocess execution; or set `LLM_CONFIDENTIAL_ALLOWED_SCRIPTS=a,b` |
+| `--no-escalate` | strong tier only: disable auto-escalation from free to paid model |
+| `--dry-run` | strong tier only: print routing decision and exit without making an API call |
 
 ## Runbook templates — fill a blank, don't hand-author
 
@@ -95,6 +109,7 @@ tax for recurring delegation shapes — reach for it before writing a bespoke pr
 | `supervise` | second-opinion AGREE/DISAGREE on a claim | `echo "CLAIM: ..." \| python .../llm_strong.py --runbook supervise --stdin --no-privacy` |
 | `watch` | poll a status command, early-stop on a condition | `python .../llm_strong.py --runbook watch "<status cmd>; stop when ...; max 6 cycles"` |
 | `fleet` | swarm strong agents over a WHOLE codebase, audited before return | `python .../fleet_review.py --scope "src/**" --confidential-glob "config/**" --dry-run` |
+| `improve` | quality + structure review (not a bug hunt) — finds misplaced responsibility, dead code, confusing UX, stale docs | `python .../llm_strong.py --runbook improve -f FILE --no-privacy` |
 
 A runbook makes the positional prompt OPTIONAL (the template is the instruction; pipe data via
 `--stdin`/`-f`). Batteries-included defaults: `triage`/`summarize`/`supervise`/`review`/`commit`

@@ -1,10 +1,10 @@
 [build-system]
 requires = ["setuptools"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "local-llm-delegate"
-version = "1.11.3"
+version = "1.12.0"
 description = "Two-tier LLM delegation for Claude Code — free local LM Studio + strong cloud (Opencode Zen) behind a privacy guard"
 requires-python = ">=3.10"
 license = "MIT"

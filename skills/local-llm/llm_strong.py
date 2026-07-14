@@ -57,7 +57,7 @@ import llm_local  # noqa: E402
 DEFAULT_BASE_URL = "https://opencode.ai/zen/v1"
 DEFAULT_STRONG_MODEL = "deepseek-v4-flash-free"
 MODEL_ALIASES = {
-    "deeepseek-v4-flash-free": DEFAULT_STRONG_MODEL,
+    "deepseek-v4-flash-free": DEFAULT_STRONG_MODEL,
     "deepseek/deepseek-v4-flash-free": DEFAULT_STRONG_MODEL,
     "opencode/deepseek-v4-flash-free": DEFAULT_STRONG_MODEL,
     "deepseek/deepseek-v4-flash:free": DEFAULT_STRONG_MODEL,
