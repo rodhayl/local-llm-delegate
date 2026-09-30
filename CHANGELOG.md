@@ -6,6 +6,11 @@ Versions track the exportable engine (`llm_local.py` + `llm_strong.py`) and skil
 Project-specific collectors/orchestrators (e.g. trading data collectors) live outside the
 plugin and are not versioned here.
 
+## Unreleased — 2026-09-30
+- Honor configured routing before free-name preference: explicit `--model` wins; privacy-off selects `OPENCODE_MODEL_OPEN` when set, otherwise `OPENCODE_MODEL`; privacy-on selects `OPENCODE_MODEL`. Missing applicable configuration retains the built-in free default
+- Do not let a free model from the other route override the selected configuration. Preserve explicit fallback chains and existing no-paid-escalation behavior for free-named chains
+- Add 17 offline CLI/fleet routing tests, including five regressions reproduced before the fix. This does not certify provider privacy or change redaction/host-execution protections
+
 ## Recent highlights (v1.12.0)
 
 - Extended privacy redaction (Google API keys, GitHub PATs, SSH keys, hex strings)
@@ -167,3 +172,4 @@ plugin and are not versioned here.
 ## 1.0.0
 - Local tier (`llm_local.py`): inline files/stdin, `--tools` run_python, `-i` vision,
   `--caveman`/`--max-words`, `--json`, `--out`, `--chunk` map-reduce.
+

@@ -31,9 +31,9 @@ Use it with a self-contained runbook prompt that names only wrapper-script comma
 
 Configuration (env vars; set once in ~/.claude/settings.json "env" block):
   OPENCODE_API_KEY    required
-  OPENCODE_MODEL      optional fallback legacy setting (or pass --model)
-  OPENCODE_MODEL_OPEN optional fallback legacy setting
-  Default model for every tier is deepseek-v4-flash-free on the Zen endpoint.
+  OPENCODE_MODEL      configured filtered/default route (or pass --model)
+  OPENCODE_MODEL_OPEN configured --no-privacy route
+  When no applicable model is configured, the legacy free default is retained.
   Historical/provider aliases are normalized to the advertised Opencode model id.
   OPENCODE_BASE_URL   optional, default https://opencode.ai/zen/v1
 
@@ -360,26 +360,16 @@ def main() -> int:
     api_key = os.environ.get("OPENCODE_API_KEY")
     if not api_key:
         sys.exit(f"error: OPENCODE_API_KEY is not set.\n{CONFIG_HELP}")
-    # Model routing: if any configured default contains "-free", use that free
-    # model for every implicit request (privacy and no-privacy). Explicit
-    # --model still wins for manual probes.
+    # Explicit selection wins. Otherwise select the configured route before
+    # considering the legacy free default. Price-like names must not override
+    # the operator's privacy/open routing choice.
     chain = _model_chain(args.model) if args.model else []
     tier = "explicit --model"
     on_open_tier = False
-    selected_free_override = False
     if not chain:
         open_chain = _model_chain(os.environ.get("OPENCODE_MODEL_OPEN", ""))
         privacy_chain = _model_chain(os.environ.get("OPENCODE_MODEL", ""))
-        configured = open_chain + privacy_chain
-        free_chain = open_chain if _contains_free_model(open_chain) else (
-            privacy_chain if _contains_free_model(privacy_chain) else []
-        )
-        if free_chain:
-            chain = free_chain
-            tier = "configured free tier (*-free default)"
-            on_open_tier = True
-            selected_free_override = bool(configured and configured[0] != chain[0])
-        elif args.no_privacy and open_chain:
+        if args.no_privacy and open_chain:
             chain = open_chain
             tier = "open tier (OPENCODE_MODEL_OPEN)"
             on_open_tier = True
@@ -390,8 +380,6 @@ def main() -> int:
             chain = [DEFAULT_STRONG_MODEL]
             tier = "built-in free default"
             on_open_tier = True
-        if selected_free_override and not args.check:
-            print(f"[model] overriding configured {configured[0]} -> {chain[0]}", file=sys.stderr)
     args.model = chain[0] if chain else None
     args.fallback_models = chain[1:]
     # Escalation: when running the cheaper open tier, keep the stronger PAID model
